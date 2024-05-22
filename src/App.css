@@ -1,0 +1,136 @@
+.logo.vite:hover {
+  filter: drop-shadow(0 0 2em #747bff);
+}
+
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafb);
+}
+
+* {
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: -moz-none;
+    -o-user-select: none;
+    user-select: none;
+}
+
+#app {
+    height: 100vh;
+    text-align: center;
+    cursor: pointer;
+}
+.close {
+    position:fixed;
+    right:0;
+    padding-top:10px;
+    padding-right:15px;
+}
+.topbar {
+    background:red;
+    --wails-draggable: drag;
+    padding:30px;
+}
+
+#logo {
+    display: block;
+    width: 50%;
+    height: 50%;
+    margin: auto;
+    padding: 10% 0 0;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    background-origin: content-box;
+}
+
+.result {
+    height: 20px;
+    line-height: 20px;
+    margin: 1.5rem auto;
+}
+
+.input-box .btn {
+    width: 60px;
+    height: 30px;
+    line-height: 30px;
+    border-radius: 3px;
+    border: none;
+    margin: 0 0 0 20px;
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+.input-box .btn:hover {
+    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
+    color: #333333;
+}
+
+.input-box .input {
+    border: none;
+    border-radius: 3px;
+    outline: none;
+    height: 30px;
+    line-height: 30px;
+    padding: 0 10px;
+    background-color: rgba(240, 240, 240, 1);
+    -webkit-font-smoothing: antialiased;
+}
+
+.input-box .input:hover {
+    border: none;
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.input-box .input:focus {
+    border: none;
+    background-color: rgba(255, 255, 255, 1);
+}
+
+.slider-container {
+    margin:30px;
+}
+
+.slider-disabled {
+    width: 90%;
+}
+
+.slider {
+    width: 90%;
+}
+
+    .slider-container .slider-disabled {
+        -webkit-appearance: none;
+        height: 8px;
+        background: grey;
+        outline: none;
+        outline: none;
+        opacity: 0.7;
+        transition: opacity .2s;
+    }
+
+    .slider-container .slider {
+        -webkit-appearance: none;
+        height: 8px;
+        background: linear-gradient(to right, rgba(255, 0, 0, 0.3), red, rgba(255, 0, 0, 0.3));
+        outline: none;
+        outline: none;
+        opacity: 0.7;
+        transition: opacity .2s;
+    }
+
+    .slider-container .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: #4CAF50;
+        border-radius: 50%;
+        cursor: pointer;
+    }
+
+    .slider-container .slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        background: #4CAF50;
+        cursor: pointer;
+    }
