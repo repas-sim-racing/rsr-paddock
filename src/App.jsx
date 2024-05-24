@@ -2,6 +2,9 @@ import {useEffect, useState} from 'react';
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
+import { appWindow } from '@tauri-apps/api/window';
+import paddockLogo from "./assets/paddock_logo.png";
+import rsrLogo from "./assets/rsr_logo.png";
 
 function App() {
     const [sliderPowerValue, setSliderPowerValue] = useState(50);
@@ -77,23 +80,35 @@ function App() {
         }
     }
 
+    const closeApp = async () => {
+        appWindow.close();
+    }
+
+    const minimizeApp = async () => {
+        appWindow.minimize();
+    }
+
     useEffect(() => {
+      appWindow.setResizable(false);
+      appWindow.setTitle('RPS Paddock')
       setInterval(() => {
           getDevices();
       }, 1000);
     }, [])
 
     return (
-        <div id="App">
-	    <div className="topbar">
-            <h1>RPS Paddock</h1>
-        <div>{status} 
-            {connectedDevice && connectedDevice.length > 0 && (
-                <span> ({connectedDevice})</span>
-            )}
+        <div id="app">
+	    <div className="titlebar" data-tauri-drag-region>
+      <div id="titlebar-buttons">
+      <button className="titlebar-button" id="close" onClick={closeApp}>×</button>
+      <button className="titlebar-button" id="minimize" onClick={minimizeApp}>−</button>
+    </div>
+    <div className="title" data-tauri-drag-region>
+            <img src={paddockLogo} width="300" data-tauri-drag-region/>
+    </div>
+
         </div>
-        </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Power: {sliderPowerValue}%</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -103,10 +118,9 @@ function App() {
                     max="100"
                     value={sliderPowerValue}
                     onChange={updateSliderPowerValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Detail: {sliderDetailValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -116,10 +130,9 @@ function App() {
                     max="100"
                     value={sliderDetailValue}
                     onChange={updateSliderDetailValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Steering Angle: {sliderRangeValue} degree</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -129,10 +142,9 @@ function App() {
                     max="1440"
                     value={sliderRangeValue}
                     onChange={updateSliderRangeValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Bumpstop: {sliderBumpstopValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -142,10 +154,9 @@ function App() {
                     max="100"
                     value={sliderBumpstopValue}
                     onChange={updateSliderBumpstopValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Mechanical Damper: {sliderMechanicalDamperValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -155,10 +166,9 @@ function App() {
                     max="100"
                     value={sliderMechanicalDamperValue}
                     onChange={updateSliderMechanicalDamperValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Damper: {sliderDamperValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -168,10 +178,9 @@ function App() {
                     max="100"
                     value={sliderDamperValue}
                     onChange={updateSliderDamperValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Spring: {sliderSpringValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -181,10 +190,9 @@ function App() {
                     max="100"
                     value={sliderSpringValue}
                     onChange={updateSliderSpringValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
+        <div className="slider-container">
                 <div id="slider-value" className="slider-value">Friction: {sliderFrictionValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -194,11 +202,10 @@ function App() {
                     max="100"
                     value={sliderFrictionValue}
                     onChange={updateSliderFrictionValue}
-                    id="slider"
                 />
         </div>
-        <div id="slider-container" className="slider-container">
-                <div id="slider-value" className="slider-value">Intertia: {sliderInertiaValue}</div>
+        <div className="slider-container">
+                <div id="slider-value" className="slider-value">Inertia: {sliderInertiaValue}</div>
                 <input
                     disabled={!(connectedDevice && connectedDevice.length > 0)}
                     className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
@@ -207,8 +214,17 @@ function App() {
                     max="100"
                     value={sliderInertiaValue}
                     onChange={updateSliderInertiaValue}
-                    id="slider"
                 />
+        </div>
+        <div id="footer">
+            {/*
+        <img height="15" src={rsrLogo}/>
+             */}
+        <div className="status">{status} 
+            {connectedDevice && connectedDevice.length > 0 && (
+                <span> ({connectedDevice})</span>
+            )}
+        </div>
         </div>
         </div>
     )
