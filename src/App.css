@@ -1,9 +1,18 @@
+@font-face {
+    font-family: 'SpaceGrotesk';
+    src: url('./assets/SpaceGrotesk-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
 * {
     -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: -moz-none;
     -o-user-select: none;
     user-select: none;
+    overflow: hidden;
+		font-family: 'SpaceGrotesk', sans-serif;
 }
 
 #app {
@@ -11,6 +20,10 @@
     text-align: center;
     background:grey;
     overflow: hidden;
+    background: url('./assets/background.png');
+    background-position:center;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 .close {
     position:fixed;
@@ -19,7 +32,6 @@
     padding-right:15px;
 }
 .titlebar {
-    background:red;
     --wails-draggable: drag;
     padding:10px;
 }
@@ -31,6 +43,18 @@
     text-align:left;
 }
 
+.device-box {
+    width:284px;
+    height: 26px;
+    background: url('./assets/device-box-background.png');
+    background-position:center;
+    background-size: cover;
+    background-repeat: no-repeat;
+    display:inline-block;
+    margin-left:100px;
+    text-align: center;
+}
+
 #titlebar-buttons {
     display: absolute;
     float:right;
@@ -38,9 +62,9 @@
 
   .titlebar-button {
     -webkit-app-region: no-drag;
-    background-color: rgba(27, 38, 54, 1);
+    background-color: #8F3900;
     border: none;
-    color: white;
+    color: black;
     padding: 10 20px;
     cursor: pointer;
     font-size: 20px;
@@ -54,9 +78,36 @@
     background-color: #555;
   }
 
+.content {
+	font-size:14px;
+  width:100%;
+  padding:10px !important;
+  vertical-align:top;
+}
+
+.col-axis {
+  width:30%;
+  padding-left:10px !important;
+  display:inline-block !important;
+  vertical-align:top;
+}
+
+.col-effect {
+  width:30%;
+  padding-left:10px !important;
+  display:inline-block !important;
+  vertical-align:top;
+}
+
+.col-angle {
+  width:30%;
+  display:inline-block !important;
+  vertical-align:top;
+}
 
 .slider-container {
-    margin:20px;
+  text-align:left;
+  margin-top:25px;
 }
 
 .slider-container .slider-disabled {
@@ -86,7 +137,7 @@
     appearance: none;
     width: 20px;
     height: 20px;
-    background: #4CAF50;
+    background: white;
     border-radius: 50%;
     cursor: pointer;
 }
@@ -94,14 +145,19 @@
 .slider-container .slider::-moz-range-thumb {
     width: 20px;
     height: 20px;
-    background: #4CAF50;
+    background: white;
     cursor: pointer;
 }
 
 #footer {
-    margin-top:50px;
-    background:red;
-    height: 30px;
+    margin-top:40px;
+    height: 40px;
+		margin-right:25px;
+		margin-left:25px;
+    background: url('./assets/footer-background.png');
+    background-position:center;
+    background-size: cover;
+    background-repeat: no-repeat;
 }
 
 .status {

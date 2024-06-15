@@ -16,8 +16,8 @@
     "windows": [
       {
         "title": "RPS Paddock",
-        "width": 900,
-        "height": 900,
+        "width": 997,
+        "height": 594,
         "decorations": false
       }
     ],
