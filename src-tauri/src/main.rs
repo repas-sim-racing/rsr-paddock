@@ -34,6 +34,7 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn read_device_encoder() -> f64 {
+    // TODO need to tidy up this ugly nested style
     let mut global_port = GLOBAL_SERIAL_PORT.lock().unwrap();
     if let Some(ref mut port) = *global_port {
         let command = "axis.0.pos\n\r";
@@ -157,36 +158,7 @@ fn set_value(input: &str) {
         info!("{}", command);
         if let Some(ref mut port) = *global_port {
             match port.write(command.as_bytes()) {
-                Ok(_) => {
-
-
-                let mut buffer: Vec<u8> = vec![0; 1024];
-                match port.read(buffer.as_mut_slice()) {
-                    Ok(n) => {
-                        info!("port read attempt in loop, read ok");
-                        if n > 0 {
-                            println!("Read {} bytes: {:?}", n, &buffer[..n]);
-                            let ok = String::from_utf8(buffer.to_vec());
-                            match ok {
-                                Ok(decoded_string) => {
-                                    info!("{}", decoded_string);
-                                },
-                                Err(e) => eprintln!("Failed to decode string: {}", e),
-
-                            }
-                        }
-                    }
-                    Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => {
-                        info!("port read attempt in loop, no data");
-                    }
-                    Err(e) => {
-                        info!("port read attempt in loop, failed to read");
-                        eprintln!("Failed to read from port: {}", e);
-                    }
-                }
-
-
-                }, 
+                Ok(_) => info!("Command sent successfully"),
                 Err(e) => {
                     info!("Failed to send command: {}", e);
                 },
