@@ -1,11 +1,14 @@
 import {useEffect, useState} from 'react';
 import { invoke } from "@tauri-apps/api/tauri";
+import { BaseDirectory, createDir, readTextFile, writeTextFile, exists } from "@tauri-apps/api/fs";
+import { appDataDir } from '@tauri-apps/api/path';
 import "./App.css";
 import { appWindow } from '@tauri-apps/api/window';
 import paddockLogo from "./assets/paddock-logo.png";
 import axisTab from "./assets/axis-tab.png";
 import effectTab from "./assets/effect-tab.png";
 import steeringWheel from "./assets/steering-wheel.png";
+import steeringWheelActive from "./assets/steering-wheel-active.png";
 import steeringWheelTitle from "./assets/steering-wheel-angle-title.png";
 
 function App() {
@@ -21,10 +24,83 @@ function App() {
     const [sliderInertiaValue, setSliderInertiaValue] = useState(50);
     const [sliderFilterFreqValue, setSliderFilterFreqValue] = useState(250);
     const [sliderFilterQValue, setSliderFilterQValue] = useState(40);
+    const [rotation, setRotation] = useState(0);
+    const [profiles, setProfiles] = useState({});
 
     const [status, setStatus] = useState('Disconnected');
     const [connectedDevice, setConnectedDevice] = useState('');
     const [message, setMessage] = useState('');
+
+    const prepareDataDirectory = async () => {
+      await createDir("data", {
+        dir: BaseDirectory.Desktop,
+        recursive: true,
+      });
+    }
+
+    const applyProfile = async (profile) => {
+        const keys = Object.keys(profile);
+        for (let i in keys) {
+            let key = keys[i];
+            if (key === 'name') { // This could cause crash in Rust side.
+                continue;
+            }
+            let value = profile[key];
+            let input = key + ":" + value
+            console.log(input);
+            await invoke("set_value", { input });
+        }
+    }
+
+    const syncProfileData = async () => {
+        await prepareDataDirectory()
+
+        const appDirectory = await appDataDir();
+        const filePath = appDirectory + `profiles.json`
+        try {
+            const fileExists = await exists(filePath);
+            if (!fileExists) {
+                let profiles = {
+                    current: "Default",
+                    profiles: [{
+                        name: "Default",
+                        degrees: 540,
+                        power: 50,
+                        intensity: 50,
+                        bumpstop: 50,
+                        idlespring: 50,
+                        mechanicaldamper: 50,
+                        damper: 50,
+                        spring: 50,
+                        friction: 50,
+                        inertia: 50,
+                        filtefreq: 250,
+                        filterq: 50,
+                    }],
+                }
+                setProfiles(profiles);
+                applyProfile(profiles.profiles[0]);
+                let content = JSON.stringify(profiles);
+                await writeTextFile(
+                    {
+                        contents: content,
+                        path: filePath,
+                    }
+                );
+            } else {
+                const content = await readTextFile(filePath);
+                const profiles = JSON.parse(content);
+                setProfiles(profiles);
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    };
+
+    const readDeviceEncoder = async (e) => {
+        let degs = await invoke("read_device_encoder");
+        setRotation(Math.floor(degs));
+    }
 
     const setCenterPosition = async (e) => {
         let input = "center" + ":0";
@@ -105,12 +181,24 @@ function App() {
     }
 
     useEffect(() => {
-      appWindow.setResizable(false);
-      appWindow.setTitle('RPS Paddock')
-      setInterval(() => {
-          getDevices();
-      }, 1000);
-    }, [])
+        appWindow.setResizable(false);
+        appWindow.setTitle('RPS Paddock')
+
+        syncProfileData();
+
+        const readDeviceEncoderInterval = setInterval(() => {
+            readDeviceEncoder();
+        }, 50);
+
+        const getDeviceInterval = setInterval(() => {
+            getDevices();
+        }, 1000);
+
+        return () => {
+            clearInterval(getDeviceInterval);
+            clearInterval(readDeviceEncoderInterval);
+        }
+    }, [status])
 
     return (
         <div id="app">
@@ -121,14 +209,19 @@ function App() {
                 </div>
                 <div className="title" data-tauri-drag-region>
                     <img src={paddockLogo} width="300" data-tauri-drag-region/>
-	    	    <div className="device-box">
-                <div className="status">
+	    	    <div className="device-box" data-tauri-drag-region>
+                <div className="status" data-tauri-drag-region>
+                {status=='Connected' ? (
+                    <div className="connected-indicator" data-tauri-drag-region></div>
+                ) : (
+                    <div className="disconnected-indicator" data-tauri-drag-region></div>
+                )}
 	    	    {status} 
                     {connectedDevice && connectedDevice.length > 0 && (
-                        <span> ({connectedDevice})</span>
+                        <span data-tauri-drag-region> ({connectedDevice})</span>
                     )}
                     {message && message.length > 0 && (
-                        <span> {message}</span>
+                        <span data-tauri-drag-region> {message}</span>
                     )}
                 </div>
 	    	    </div>
@@ -299,12 +392,37 @@ function App() {
                 </div>
                 <div className="col-angle">
 	    	    <img src={steeringWheelTitle} style={{height:15, align:'left', marginTop:30}}/>
-	    	    <img src={steeringWheel} style={{height:200, align:'left', marginTop:40, marginBottom:30}}/>
-                        <button onClick={setCenterPosition}>Set center position</button>
+                <div style={{
+                  position:'fixed',
+                  zIndex: 999,
+                  marginTop:131,
+                  marginLeft:129,
+                  width: 40,
+                  textAlign:'center',
+                  color: 'black'
+                  }}>
+                    {rotation}
+                </div>
+	    	    <img src={connectedDevice === '' ? steeringWheel : steeringWheelActive} 
+                    style={{
+                    height: 200,
+                    marginTop: 40,
+                    marginBottom: 30,
+                    transform: `rotate(${rotation}deg)`,
+                    transformOrigin: 'center center',
+                    }}
+                />
+                <button onClick={setCenterPosition} className="set-center-button">Set center position</button>
+                <br/>
+                {/* 
+                */}
+                <button onClick={getDevices} className="set-center-button">Get device</button>
+                <button onClick={readDeviceEncoder} className="set-center-button">Read device</button>
                 </div>
 
             </div>
             <div id="footer">
+                <div style={{marginTop: 10}}>Profile: {profiles.current}</div>
             </div>
         </div>
     )

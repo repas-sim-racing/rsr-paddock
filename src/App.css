@@ -162,5 +162,37 @@
 
 .status {
     padding-top:2px;
+}
 
+.connected-indicator {
+  display:inline-block;
+  margin-right: 10px;
+  border-radius: 5px;
+  background: green;
+  width: 10px;
+  height: 10px;
+}
+
+.disconnected-indicator {
+  display:inline-block;
+  margin-right: 10px;
+  border-radius: 5px;
+  background: grey;
+  width: 10px;
+  height: 10px;
+}
+
+.set-center-button {
+  background: #C01E11;
+  border: 0px;
+  color: white;
+  -webkit-transform: skew(-10deg);
+  padding: 5px 10px 5px 10px;
+}
+
+.set-center-button:hover {
+  background: #f03e31;
+}
+.set-center-button:active {
+  background: #580d08;
 }
