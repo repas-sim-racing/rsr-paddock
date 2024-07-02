@@ -1,6 +1,6 @@
 # RSR Paddock
 
-![image](https://gist.github.com/assets/2534060/3bb53120-f860-42d6-bd22-5c36a22c0c2d)
+<img src="https://gist.github.com/assets/2534060/3bb53120-f860-42d6-bd22-5c36a22c0c2d"/>
 
 ## Current supported devices
 
