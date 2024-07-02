@@ -574,13 +574,13 @@ function App() {
                         We owe a great deal to the free and open-source software that helped us reach where we are today. Below, you’ll find a complete list of the software we’ve used and their license terms.
                         <ul>
                             <li>
-                                OpenFFBoard (MIT)  https://github.com/Ultrawipf/OpenFFBoard
+                                OpenFFBoard (MIT)  <a href="https://github.com/Ultrawipf/OpenFFBoard" target="_blank">https://github.com/Ultrawipf/OpenFFBoard</a>
                             </li>
                             <li>
-                                VESC Firmware (GPLv3) - https://github.com/vedderb/bldc
+                                VESC Firmware (GPLv3) - <a href="https://github.com/vedderb/bldc" target="_blank">https://github.com/vedderb/bldc</a>
                             </li>
                             <li>
-                                Tauri (MIT) - https://github.com/tauri-apps/taur
+                                Tauri (MIT) - <a href="https://github.com/tauri-apps/tauri" target="_blank">https://github.com/tauri-apps/tauri</a>
                             </li>
                         </ul>
                     </p>
