@@ -26,16 +26,37 @@ function App() {
     const [sliderFilterQValue, setSliderFilterQValue] = useState(40);
     const [rotation, setRotation] = useState(0);
     const [profiles, setProfiles] = useState({});
-
+    const [currentPage, setCurrentPage] = useState('main');
     const [status, setStatus] = useState('Disconnected');
     const [connectedDevice, setConnectedDevice] = useState('');
     const [message, setMessage] = useState('');
+    const [newProfileName, setNewProfileName] = useState('');
+    const [profileChanged, setProfileChanged] = useState(false);
 
     const prepareDataDirectory = async () => {
       await createDir("data", {
         dir: BaseDirectory.Desktop,
         recursive: true,
       });
+    }
+
+    const onProfileNameChange = (e) => {
+        setNewProfileName(e.target.value);
+    }
+
+    const deleteCurrentProfile = () => {
+        let obj = Object.assign({}, profiles);
+        for (let i in Object.keys(obj.profiles)) {
+            if (obj.profiles[i].name === profiles.current) {
+                obj.profiles.splice(i, 1);
+            }
+        }
+        obj.current = 'Default';
+        setProfiles(obj);
+        applyProfile(obj.profiles[0]);
+        syncProfileData(obj);
+
+        setCurrentPage('main');
     }
 
     const applyProfile = async (profile) => {
@@ -47,20 +68,57 @@ function App() {
             }
             let value = profile[key];
             let input = key + ":" + value
-            console.log(input);
             await invoke("set_value", { input });
+        switch (key) {
+            case "power":
+                setSliderPowerValue(value);
+                break;
+            case "intensity":
+                setSliderIntensityValue(value);
+                break;
+            case "degrees":
+                setSliderDegreesValue(value);
+                break;
+            case "bumpstop":
+                setSliderBumpstopValue(value);
+                break;
+            case "idlespring":
+                setSliderIdleSpringValue(value);
+                break;
+            case "mechanicaldamper":
+                setSliderMechanicalDamperValue(value);
+                break;
+            case "damper":
+                setSliderDamperValue(value);
+                break;
+            case "spring":
+                setSliderSpringValue(value);
+                break;
+            case "friction":
+                setSliderFrictionValue(value);
+                break;
+            case "inertia":
+                setSliderInertiaValue(value);
+                break;
+            case "filterfreq":
+                setSliderFilterFreqValue(value);
+                break;
+            case "filterq":
+                setSliderFilterQValue(value);
+                break;
+            default:
+                break;
         }
+        }
+        setCurrentPage('main');
     }
 
-    const syncProfileData = async () => {
+    const syncProfileData = async (data) => {
         await prepareDataDirectory()
 
         const appDirectory = await appDataDir();
         const filePath = appDirectory + `profiles.json`
-        try {
-            const fileExists = await exists(filePath);
-            if (!fileExists) {
-                let profiles = {
+        let defaultProfiles = {
                     current: "Default",
                     profiles: [{
                         name: "Default",
@@ -77,10 +135,13 @@ function App() {
                         filtefreq: 250,
                         filterq: 50,
                     }],
-                }
-                setProfiles(profiles);
-                applyProfile(profiles.profiles[0]);
-                let content = JSON.stringify(profiles);
+        }
+        try {
+            const fileExists = await exists(filePath);
+            if (!fileExists) {
+                setProfiles(defaultProfiles);
+                applyProfile(defaultProfiles.profiles[0]);
+                let content = JSON.stringify(defaultProfiles);
                 await writeTextFile(
                     {
                         contents: content,
@@ -88,9 +149,24 @@ function App() {
                     }
                 );
             } else {
-                const content = await readTextFile(filePath);
-                const profiles = JSON.parse(content);
-                setProfiles(profiles);
+                if (!data) {
+                    const content = await readTextFile(filePath);
+                    const existing = JSON.parse(content);
+                    if (existing && existing.profiles && existing.profiles.length > 0 && existing.profiles[0].name === 'Default') {
+                        setProfiles(existing);
+                    } else {
+                        setProfiles(defaultProfiles);
+                    }
+                } else {
+                    let obj = Object.assign({}, data);
+                    let content = JSON.stringify(obj);
+                    await writeTextFile(
+                    {
+                        contents: content,
+                        path: filePath,
+                    }
+                    );
+                }
             }
         } catch (e) {
             console.log(e);
@@ -107,7 +183,35 @@ function App() {
         await invoke("set_value", { input });
     }
 
+    const saveProfile = async () => {
+        let toBeSaved = {
+                        name: profiles.current,
+                        degrees: sliderDegreesValue,
+                        power: sliderPowerValue,
+                        intensity: sliderIntensityValue,
+                        bumpstop: sliderBumpstopValue,
+                        idlespring: sliderIdleSpringValue,
+                        mechanicaldamper: sliderMechanicalDamperValue,
+                        damper: sliderDamperValue,
+                        spring: sliderSpringValue,
+                        friction: sliderFrictionValue,
+                        inertia: sliderInertiaValue,
+                        filtefreq: sliderFilterFreqValue,
+                        filterq: sliderFilterQValue,
+        }
+        let obj = Object.assign({}, profiles);
+        for (let i in Object.keys(obj.profiles)) {
+            if (obj.profiles[i].name === toBeSaved.name) {
+                obj.profiles[i] = toBeSaved;
+                break;
+            }
+        }
+        setProfileChanged(false);
+        syncProfileData(obj);
+    }
+
     const updateSliderValue = async (e) => {
+        setProfileChanged(true);
         switch (e.target.id) {
             case "power":
                 setSliderPowerValue(e.target.value);
@@ -184,7 +288,7 @@ function App() {
         appWindow.setResizable(false);
         appWindow.setTitle('RPS Paddock')
 
-        syncProfileData();
+        syncProfileData(null);
 
         const readDeviceEncoderInterval = setInterval(() => {
             readDeviceEncoder();
@@ -199,6 +303,27 @@ function App() {
             clearInterval(readDeviceEncoderInterval);
         }
     }, [status])
+
+    const RenderProfiles = ({ profiles }) => {
+        const keys = Object.keys(profiles.profiles).filter(key => key !== "current");
+
+        return (
+        <ul>
+            {keys.map(key => (
+            <li className="profile-item" key={key}
+                onClick={() => {
+                    applyProfile(profiles.profiles[key]);
+                    let obj = Object.assign({}, profiles);
+                    obj.current = profiles.profiles[key].name;
+                    setProfiles(obj);
+                }}
+            >
+                {profiles.profiles[key].name}
+            </li>
+            ))}
+        </ul>
+        );
+    };
 
     return (
         <div id="app">
@@ -227,9 +352,10 @@ function App() {
 	    	    </div>
                 </div>
             </div>
+            {currentPage === 'main' && (
             <div className="content">
                 <div className="col-axis">
-	    	    <img src={axisTab} style={{height:30, align:'left'}}/>
+	    	    <img src={axisTab} style={{height:30, align:'right'}}/>
                     <div className="slider-container">
                         <div id="slider-value" className="slider-value">Steering Angle <span style={{float:'right', marginRight:30}}>{sliderDegreesValue} degrees</span></div>
                         <input
@@ -421,17 +547,120 @@ function App() {
                 </div>
 
             </div>
-            <div id="footer">
-                <div style={{width: '100%', verticalAlign: 'top', padding: 7}}>
-                    <button onClick={getDevices} className="footer-button" style={{marginRight: 15}}>▲</button>
-                    <span style={{paddingTop: 0, height: 18, width: 200, marginRight: 15}}>Profile: {profiles.current}</span>
-                    <button className="footer-button">Save</button>
-                    <button className="footer-button">+</button>
-                    <button style={{float: 'right', marginRight: 30}} className="footer-button">About us</button>
-                    <button style={{float: 'right'}} className="footer-button">Third-party softwares</button>
-                    <button style={{float: 'right'}} className="footer-button">Advanced Settings</button>
+            )}
+            {currentPage === 'about' && (
+            <div className="content">
+                <div className="transparent-blur" style={{height: 410, width: 950, padding: 15}}>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="footer-button">Back</button>
+                    <h3>About Us</h3>
+                    <div style={{paddingLeft: 100, paddingRight: 100}}>
+                    <p>
+                    Our goal is to elevate the immersion of racing simulation. We provide an excellent yet affordable sim racing experience by delivering both quality hardware and endless innovations. What began as the enthusiasm of passionate DIY builders and sim racers has transformed into a well-engineered product for serious and pro sim racing gamers like you.
+                    </p>
+                    <p>
+                    The RSR team consists of 3 individuals that are based in Indonesia.
+                    </p>
+                    </div>
                 </div>
             </div>
+            )}
+            {currentPage === 'thirdparty' && (
+            <div className="content">
+                <div className="transparent-blur" style={{height: 410, width: 950, padding: 15}}>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="footer-button">Back</button>
+                    <h3>Third-party softwares</h3>
+                    <div style={{paddingLeft: 100, paddingRight: 100}}>
+                    <p style={{textAlign:'left'}}>
+                        We owe a great deal to the free and open-source software that helped us reach where we are today. Below, you’ll find a complete list of the software we’ve used and their license terms.
+                        <ul>
+                            <li>
+                                OpenFFBoard (MIT)  https://github.com/Ultrawipf/OpenFFBoard
+                            </li>
+                            <li>
+                                VESC Firmware (GPLv3) - https://github.com/vedderb/bldc
+                            </li>
+                            <li>
+                                Tauri (MIT) - https://github.com/tauri-apps/taur
+                            </li>
+                        </ul>
+                    </p>
+                    </div>
+                </div>
+            </div>
+            )}
+
+            {currentPage === 'profiles' && (
+            <div className="content" style={{textAlign:'center !important'}}>
+                <div className="transparent-blur" style={{height: 410, width: 400, padding: 15, margin: '0 auto'}}>
+                    <h3>Load Profile</h3>
+                    <div style={{height: 330, marginBottom: 10, background: 'black'}}>
+                        <RenderProfiles profiles={profiles}/>
+                    </div>
+                </div>
+            </div>
+            )}
+
+            {currentPage === 'newprofile' && (
+            <div className="content" style={{textAlign:'center !important'}}>
+                <div className="transparent-blur" style={{height: 140, width: 400, padding: 15, margin: '0 auto'}}>
+                    <h3>Create New Profile</h3>
+                    <br/>
+                    <br/>
+                    <input className="skew" style={{paddingLeft: 10, height: 20, marginRight: 5}} onChange={onProfileNameChange} value={newProfileName}/>
+                    <button onClick={() => {
+                        let newProfile = Object.assign({}, profiles.profiles[0]);
+                        newProfile.name = newProfileName;
+                        let obj = Object.assign({}, profiles);
+                        obj.profiles.push(newProfile);
+                        obj.current = newProfileName;
+                        setProfiles(obj);
+                        applyProfile(newProfile);
+                        setCurrentPage('main');
+                    }} className="footer-button">Save</button>
+                    <br/>
+                </div>
+            </div>
+            )}
+
+            {currentPage === 'deleteprofile' && (
+            <div className="content" style={{textAlign:'center !important'}}>
+                <div className="transparent-blur" style={{height: 140, width: 400, padding: 15, margin: '0 auto'}}>
+                    <h3>Delete Profile</h3>
+                    <br/>
+                    Are you sure that you want to delete {profiles.current} profile?
+                    <br/>
+                    <br/>
+                    <div>
+                        <button onClick={() => { deleteCurrentProfile()}} style={{float:'right'}} className="footer-button">Yes, delete it</button>
+                        <button onClick={() => { setCurrentPage('main')}} style={{float:'right'}} className="footer-button">Cancel</button>
+                    </div>
+                    <br/>
+                </div>
+            </div>
+            )}
+
+            {currentPage === 'main' && (
+            <div id="footer">
+                <div style={{width: '100%', verticalAlign: 'top', padding: 7}}>
+                    <button onClick={() => { setCurrentPage('profiles')}} className="footer-button" style={{marginRight: 2}}>▲ Profile: {profiles.current}</button>
+                    {profileChanged && profiles.current !== 'Default' && (
+                        <button onClick={() => { saveProfile(); }} className="footer-button blinking-save-button">Save</button>
+                    )}
+                    {profiles.current !== 'Default' && !profileChanged && (
+                        <button onClick={() => { setCurrentPage('deleteprofile') }} className="footer-button">Delete</button>
+                    )}
+                    <button onClick={() => {
+                        setCurrentPage('newprofile');
+                        setNewProfileName('');
+                    }} className="footer-button">Create + </button>
+                    <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="footer-button">About us</button>
+                    <button onClick={() => { setCurrentPage('thirdparty')}} style={{float: 'right'}} className="footer-button">Third-party softwares</button>
+                    {/*
+                        <button onClick={() => { setCurrentPage('advanced')}} style={{float: 'right'}} className="footer-button">Advanced Settings</button>
+                     */}
+                </div>
+            </div>
+            )}
         </div>
     )
 }
