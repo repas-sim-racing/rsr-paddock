@@ -415,14 +415,22 @@ function App() {
                 <button onClick={setCenterPosition} className="set-center-button">Set center position</button>
                 <br/>
                 {/* 
-                */}
                 <button onClick={getDevices} className="set-center-button">Get device</button>
                 <button onClick={readDeviceEncoder} className="set-center-button">Read device</button>
+                */}
                 </div>
 
             </div>
             <div id="footer">
-                <div style={{marginTop: 10}}>Profile: {profiles.current}</div>
+                <div style={{width: '100%', verticalAlign: 'top', padding: 7}}>
+                    <button onClick={getDevices} className="footer-button" style={{marginRight: 15}}>▲</button>
+                    <span style={{paddingTop: 0, height: 18, width: 200, marginRight: 15}}>Profile: {profiles.current}</span>
+                    <button className="footer-button">Save</button>
+                    <button className="footer-button">+</button>
+                    <button style={{float: 'right', marginRight: 30}} className="footer-button">About us</button>
+                    <button style={{float: 'right'}} className="footer-button">Third-party softwares</button>
+                    <button style={{float: 'right'}} className="footer-button">Advanced Settings</button>
+                </div>
             </div>
         </div>
     )

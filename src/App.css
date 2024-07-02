@@ -150,7 +150,10 @@
 }
 
 #footer {
+    text-align: left;
     margin-top:40px;
+    vertical-align: top;
+    padding-left: 30px;
     height: 40px;
 		margin-right:25px;
 		margin-left:25px;
@@ -183,7 +186,7 @@
 }
 
 .set-center-button {
-  background: #C01E11;
+  background: #3f211f;
   border: 0px;
   color: white;
   -webkit-transform: skew(-10deg);
@@ -194,5 +197,22 @@
   background: #f03e31;
 }
 .set-center-button:active {
+  background: #580d08;
+}
+
+.footer-button {
+  margin-right: 2px;
+  background: #3f211f;
+  border: 0px;
+  color: white;
+  -webkit-transform: skew(-10deg);
+  padding: 5px 10px 5px 10px;
+  display: inline-block;
+}
+
+.footer-button:hover {
+  background: #f03e31;
+}
+.footer-button:active {
   background: #580d08;
 }
