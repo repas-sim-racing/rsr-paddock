@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import { invoke } from "@tauri-apps/api/tauri";
 import { BaseDirectory, createDir, readTextFile, writeTextFile, exists } from "@tauri-apps/api/fs";
 import { appDataDir } from '@tauri-apps/api/path';
@@ -32,6 +32,7 @@ function App() {
     const [message, setMessage] = useState('');
     const [newProfileName, setNewProfileName] = useState('');
     const [profileChanged, setProfileChanged] = useState(false);
+    const newProfileInputRef = useRef(null);
 
     const prepareDataDirectory = async () => {
       await createDir("data", {
@@ -47,7 +48,7 @@ function App() {
     const deleteCurrentProfile = () => {
         let obj = Object.assign({}, profiles);
         for (let i in Object.keys(obj.profiles)) {
-            if (obj.profiles[i].name === profiles.current) {
+            if (obj.profiles && obj.profiles[i] && obj.profiles[i].name === profiles.current) {
                 obj.profiles.splice(i, 1);
             }
         }
@@ -57,6 +58,30 @@ function App() {
         syncProfileData(obj);
 
         setCurrentPage('main');
+    }
+
+    const saveNewProfile = () => {
+                        let newProfile = Object.assign({}, profiles.profiles[0]);
+                        newProfile.name = newProfileName;
+                        let obj = Object.assign({}, profiles);
+                        let found = false;
+        for (let i in Object.keys(obj.profiles)) {
+            if (obj.profiles[i].name === newProfileName) {
+                found = true;
+            }
+        }
+        if (found) {
+            alert('The profile with the same name is already exist!');
+            return;
+        }
+
+
+                        obj.profiles.push(newProfile);
+                        obj.current = newProfileName;
+                        setProfiles(obj);
+                        applyProfile(newProfile);
+                        setCurrentPage('main');
+                        syncProfileData(obj);
     }
 
     const applyProfile = async (profile) => {
@@ -154,8 +179,15 @@ function App() {
                     const existing = JSON.parse(content);
                     if (existing && existing.profiles && existing.profiles.length > 0 && existing.profiles[0].name === 'Default') {
                         setProfiles(existing);
+                        for (let i in Object.keys(existing.profiles)) {
+                            if (existing.profiles[i].name === existing.current) {
+                                applyProfile(existing.profiles[i]);
+                                break;
+                            }
+                        }
                     } else {
                         setProfiles(defaultProfiles);
+                        applyProfile(existing.profiles[0]);
                     }
                 } else {
                     let obj = Object.assign({}, data);
@@ -316,6 +348,7 @@ function App() {
                     let obj = Object.assign({}, profiles);
                     obj.current = profiles.profiles[key].name;
                     setProfiles(obj);
+                    syncProfileData(obj);
                 }}
             >
                 {profiles.profiles[key].name}
@@ -357,7 +390,7 @@ function App() {
                 <div className="col-axis">
 	    	    <img src={axisTab} style={{height:30, align:'right'}}/>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Steering Angle <span style={{float:'right', marginRight:30}}>{sliderDegreesValue} degrees</span></div>
+                        <div id="slider-value" className="slider-value">Steering Angle <span style={{float:'right', marginRight:30}}>{sliderDegreesValue}°</span></div>
                         <input
                             id="degrees"
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
@@ -365,6 +398,7 @@ function App() {
                             type="range"
                             min="90"
                             max="1440"
+                            step="5"
                             value={sliderDegreesValue}
                             onChange={updateSliderValue}
                         />
@@ -538,6 +572,46 @@ function App() {
                     transformOrigin: 'center center',
                     }}
                 />
+                        <div style={{textAlign:'center'}}>
+
+                        <button
+                            className={'skewed-button ' + (sliderDegreesValue === '360' ? 'skewed-button-active' : '')}
+                            onClick={() => {
+                            setSliderDamperValue('360');
+                            updateSliderValue({target: { id: 'degrees', value: '360'}})
+                            }}
+                        >
+                            360°
+                        </button>
+                        <button
+                            className={'skewed-button ' + (sliderDegreesValue === '540' ? 'skewed-button-active' : '')}
+                            onClick={() => {
+                            setSliderDamperValue('540');
+                            updateSliderValue({target: { id: 'degrees', value: '540'}})
+                            }}
+                        >
+                            540°
+                        </button>
+                        <button
+                            className={'skewed-button ' + (sliderDegreesValue === '900' ? 'skewed-button-active' : '')}
+                            onClick={() => {
+                            setSliderDamperValue('900');
+                            updateSliderValue({target: { id: 'degrees', value: '900'}})
+                            }}
+                        >
+                            900°
+                        </button>
+                        <button
+                            className={'skewed-button ' + (sliderDegreesValue === '1080' ? 'skewed-button-active' : '')}
+                            onClick={() => {
+                            setSliderDamperValue('1080');
+                            updateSliderValue({target: { id: 'degrees', value: '1080'}})
+                            }}
+                        >
+                            1080°
+                        </button>
+                        </div>
+                        <br/>
                 <button onClick={setCenterPosition} className="set-center-button">Set center position</button>
                 <br/>
                 {/* 
@@ -551,7 +625,7 @@ function App() {
             {currentPage === 'about' && (
             <div className="content">
                 <div className="transparent-blur" style={{height: 410, width: 950, padding: 15}}>
-                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="footer-button">Back</button>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Back</button>
                     <h3>About Us</h3>
                     <div style={{paddingLeft: 100, paddingRight: 100}}>
                     <p>
@@ -560,6 +634,9 @@ function App() {
                     <p>
                     The RSR team consists of 3 individuals that are based in Indonesia.
                     </p>
+                    <p>
+                        <a className="skewed-button" href="https://repas-sim-racing.github.io/" target="_blank">Visit our website</a>
+                    </p>
                     </div>
                 </div>
             </div>
@@ -567,20 +644,20 @@ function App() {
             {currentPage === 'thirdparty' && (
             <div className="content">
                 <div className="transparent-blur" style={{height: 410, width: 950, padding: 15}}>
-                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="footer-button">Back</button>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Back</button>
                     <h3>Third-party softwares</h3>
                     <div style={{paddingLeft: 100, paddingRight: 100}}>
                     <p style={{textAlign:'left'}}>
                         We owe a great deal to the free and open-source software that helped us reach where we are today. Below, you’ll find a complete list of the software we’ve used and their license terms.
                         <ul>
                             <li>
-                                OpenFFBoard (MIT)  <a href="https://github.com/Ultrawipf/OpenFFBoard" target="_blank">https://github.com/Ultrawipf/OpenFFBoard</a>
+                                OpenFFBoard (MIT) - <a className="url" href="https://github.com/Ultrawipf/OpenFFBoard" target="_blank">https://github.com/Ultrawipf/OpenFFBoard</a>
                             </li>
                             <li>
-                                VESC Firmware (GPLv3) - <a href="https://github.com/vedderb/bldc" target="_blank">https://github.com/vedderb/bldc</a>
+                                VESC Firmware (GPLv3) - <a className="url" href="https://github.com/vedderb/bldc" target="_blank">https://github.com/vedderb/bldc</a>
                             </li>
                             <li>
-                                Tauri (MIT) - <a href="https://github.com/tauri-apps/tauri" target="_blank">https://github.com/tauri-apps/tauri</a>
+                                Tauri (MIT) - <a className="url" href="https://github.com/tauri-apps/tauri" target="_blank">https://github.com/tauri-apps/tauri</a>
                             </li>
                         </ul>
                     </p>
@@ -593,31 +670,46 @@ function App() {
             <div className="content" style={{textAlign:'center !important'}}>
                 <div className="transparent-blur" style={{height: 410, width: 400, padding: 15, margin: '0 auto'}}>
                     <h3>Load Profile</h3>
-                    <div style={{height: 330, marginBottom: 10, background: 'black'}}>
+                    <div style={{height: 300, marginBottom: 10, background: 'black', overflowY:'auto'}}>
                         <RenderProfiles profiles={profiles}/>
                     </div>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Cancel</button>
                 </div>
             </div>
             )}
 
             {currentPage === 'newprofile' && (
             <div className="content" style={{textAlign:'center !important'}}>
-                <div className="transparent-blur" style={{height: 140, width: 400, padding: 15, margin: '0 auto'}}>
+                <div className="transparent-blur" style={{height: 200, width: 400, padding: 15, margin: '0 auto'}}>
                     <h3>Create New Profile</h3>
                     <br/>
                     <br/>
-                    <input className="skew" style={{paddingLeft: 10, height: 20, marginRight: 5}} onChange={onProfileNameChange} value={newProfileName}/>
-                    <button onClick={() => {
-                        let newProfile = Object.assign({}, profiles.profiles[0]);
-                        newProfile.name = newProfileName;
-                        let obj = Object.assign({}, profiles);
-                        obj.profiles.push(newProfile);
-                        obj.current = newProfileName;
-                        setProfiles(obj);
-                        applyProfile(newProfile);
-                        setCurrentPage('main');
-                    }} className="footer-button">Save</button>
+                    <input
+                        className="skew"
+                        placeholder="New profile name"
+                        style={{paddingLeft: 10, height: 20, marginRight: 5}}
+                        onChange={onProfileNameChange} 
+                        onKeyDown={(e) => {
+                            console.log(e.target);
+                            if (e.key == 'Enter') {
+                                saveNewProfile();
+                            }
+                        }}
+                        ref={newProfileInputRef}
+                        value={newProfileName}
+                    />
                     <br/>
+                    <br/>
+                    <br/>
+                    <br/>
+                    <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Cancel</button>
+                    <button
+                        style={{float:'right'}}
+                        onClick={saveNewProfile}
+                        className="skewed-button"
+                    >
+                        Save
+                    </button>
                 </div>
             </div>
             )}
@@ -631,8 +723,8 @@ function App() {
                     <br/>
                     <br/>
                     <div>
-                        <button onClick={() => { deleteCurrentProfile()}} style={{float:'right'}} className="footer-button">Yes, delete it</button>
-                        <button onClick={() => { setCurrentPage('main')}} style={{float:'right'}} className="footer-button">Cancel</button>
+                        <button onClick={() => { deleteCurrentProfile()}} style={{float:'right'}} className="skewed-button">Yes, delete it</button>
+                        <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Cancel</button>
                     </div>
                     <br/>
                 </div>
@@ -642,21 +734,28 @@ function App() {
             {currentPage === 'main' && (
             <div id="footer">
                 <div style={{width: '100%', verticalAlign: 'top', padding: 7}}>
-                    <button onClick={() => { setCurrentPage('profiles')}} className="footer-button" style={{marginRight: 2}}>▲ Profile: {profiles.current}</button>
-                    {profileChanged && profiles.current !== 'Default' && (
-                        <button onClick={() => { saveProfile(); }} className="footer-button blinking-save-button">Save</button>
-                    )}
                     {profiles.current !== 'Default' && !profileChanged && (
-                        <button onClick={() => { setCurrentPage('deleteprofile') }} className="footer-button">Delete</button>
+                        <button onClick={() => { setCurrentPage('deleteprofile') }} className="skewed-button">Delete</button>
                     )}
-                    <button onClick={() => {
+                    <button onClick={() => { setCurrentPage('profiles')}} className="skewed-button" style={{marginRight: 2}}>▲ Profile: {profiles.current}</button>
+                    {profileChanged && profiles.current !== 'Default' && (
+                        <button onClick={() => { saveProfile(); }} className="skewed-button blinking-save-button">Save</button>
+                    )}
+                    <button
+                        style={{marginLeft: 20}}
+                        onClick={() => {
                         setCurrentPage('newprofile');
                         setNewProfileName('');
-                    }} className="footer-button">Create + </button>
-                    <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="footer-button">About us</button>
-                    <button onClick={() => { setCurrentPage('thirdparty')}} style={{float: 'right'}} className="footer-button">Third-party softwares</button>
+                        setTimeout(() => {
+                            if (newProfileInputRef && newProfileInputRef.current) {
+                                newProfileInputRef.current.focus();
+                            }
+                        }, 200);
+                    }} className="skewed-button">Create new profile</button>
+                    <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="skewed-button">About us</button>
+                    <button onClick={() => { setCurrentPage('thirdparty')}} style={{float: 'right'}} className="skewed-button">Third-party softwares</button>
                     {/*
-                        <button onClick={() => { setCurrentPage('advanced')}} style={{float: 'right'}} className="footer-button">Advanced Settings</button>
+                        <button onClick={() => { setCurrentPage('advanced')}} style={{float: 'right'}} className="skewed-button">Advanced Settings</button>
                      */}
                 </div>
             </div>

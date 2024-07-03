@@ -62,9 +62,9 @@
 
   .titlebar-button {
     -webkit-app-region: no-drag;
-    background-color: #8F3900;
+    background-color:  #3f211f;
     border: none;
-    color: black;
+    color: white;
     padding: 10 20px;
     cursor: pointer;
     font-size: 20px;
@@ -75,13 +75,13 @@
   }
 
   .titlebar-button:hover {
-    background-color: #555;
+    background-color: #f03e31;;
   }
 
 .content {
 	font-size:14px;
   width:100%;
-  height: 410px;
+  height: 420px;
   padding:10px !important;
   vertical-align:top;
 }
@@ -152,7 +152,7 @@
 
 #footer {
     text-align: left;
-    margin-top:40px;
+    margin-top:30px;
     vertical-align: top;
     padding-left: 30px;
     height: 40px;
@@ -216,7 +216,7 @@
   100% { background-color: #f03e31; }
 }
 
-.footer-button {
+.skewed-button {
   margin-right: 2px;
   background: #3f211f;
   border: 0px;
@@ -225,12 +225,21 @@
   padding: 5px 10px 5px 10px;
   display: inline-block;
 }
+.skewed-button-active {
+  background: #f03e31 !important;
+}
 
-.footer-button:hover {
+.skewed-button:hover {
   background: #f03e31;
 }
-.footer-button:active {
+.skewed-button:active {
   background: #580d08;
+}
+
+.url {
+  text-decoration: none;
+  color: white;
+
 }
 
 .current-profile {
@@ -246,7 +255,7 @@
 .profile-item {
   height: 30px;
   padding-top: 10px;
-  margin-left: -30px;
+  margin-left: -40px;
   width: 100%;
   background: #3f211f;
   border: 0px;
