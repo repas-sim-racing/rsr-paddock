@@ -577,7 +577,7 @@ function App() {
                         <button
                             className={'skewed-button ' + (sliderDegreesValue === '360' ? 'skewed-button-active' : '')}
                             onClick={() => {
-                            setSliderDamperValue('360');
+                            setSliderDegreesValue('360');
                             updateSliderValue({target: { id: 'degrees', value: '360'}})
                             }}
                         >
@@ -586,7 +586,7 @@ function App() {
                         <button
                             className={'skewed-button ' + (sliderDegreesValue === '540' ? 'skewed-button-active' : '')}
                             onClick={() => {
-                            setSliderDamperValue('540');
+                            setSliderDegreesValue('540');
                             updateSliderValue({target: { id: 'degrees', value: '540'}})
                             }}
                         >
@@ -595,7 +595,7 @@ function App() {
                         <button
                             className={'skewed-button ' + (sliderDegreesValue === '900' ? 'skewed-button-active' : '')}
                             onClick={() => {
-                            setSliderDamperValue('900');
+                            setSliderDegreesValue('900');
                             updateSliderValue({target: { id: 'degrees', value: '900'}})
                             }}
                         >
@@ -604,7 +604,7 @@ function App() {
                         <button
                             className={'skewed-button ' + (sliderDegreesValue === '1080' ? 'skewed-button-active' : '')}
                             onClick={() => {
-                            setSliderDamperValue('1080');
+                            setSliderDegreesValue('1080');
                             updateSliderValue({target: { id: 'degrees', value: '1080'}})
                             }}
                         >
@@ -612,7 +612,7 @@ function App() {
                         </button>
                         </div>
                         <br/>
-                <button onClick={setCenterPosition} className="set-center-button">Set center position</button>
+                <button onClick={setCenterPosition} className="set-center-button" >Set center position</button>
                 <br/>
                 {/* 
                 <button onClick={getDevices} className="set-center-button">Get device</button>
