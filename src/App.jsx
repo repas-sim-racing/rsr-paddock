@@ -1,7 +1,7 @@
 import {useEffect, useState, useRef} from 'react';
 import { invoke } from "@tauri-apps/api/tauri";
 import { BaseDirectory, createDir, readTextFile, writeTextFile, exists } from "@tauri-apps/api/fs";
-import { appDataDir } from '@tauri-apps/api/path';
+import { appDataDir, appDir } from '@tauri-apps/api/path';
 import "./App.css";
 import { appWindow } from '@tauri-apps/api/window';
 import paddockLogo from "./assets/paddock-logo.png";
@@ -32,7 +32,35 @@ function App() {
     const [message, setMessage] = useState('');
     const [newProfileName, setNewProfileName] = useState('');
     const [profileChanged, setProfileChanged] = useState(false);
+    const [encoderRatio, setEncoderRatio] = useState(1.0);
+    const [angleRatio, setAngleRatio] = useState(1.0);
+    const [reload, setReload] = useState(0);
     const newProfileInputRef = useRef(null);
+    const advancedSettingsEncoderRatioInputRef = useRef(null);
+    
+    const defaultConfig = {
+        encoderRatio: 1.0,
+        angleRatio: 1.0,
+    }
+
+    const defaultProfiles = {
+                    current: "Default",
+                    profiles: [{
+                        name: "Default",
+                        degrees: 540,
+                        power: 50,
+                        intensity: 50,
+                        bumpstop: 50,
+                        idlespring: 50,
+                        mechanicaldamper: 50,
+                        damper: 50,
+                        spring: 50,
+                        friction: 50,
+                        inertia: 50,
+                        filtefreq: 250,
+                        filterq: 50,
+                    }],
+    }
 
     const prepareDataDirectory = async () => {
       await createDir("data", {
@@ -88,13 +116,20 @@ function App() {
         const keys = Object.keys(profile);
         for (let i in keys) {
             let key = keys[i];
-            if (key === 'name') { // This could cause crash in Rust side.
+            if (key === 'name' || key === '') { // This could cause crash in Rust side.
                 continue;
             }
             let value = profile[key];
             let input = key + ":" + value
+            if (key === 'degrees') {
+                let adjustedValue = value * angleRatio;
+                input = key + ":" + adjustedValue
+            }
+            // Apply
             await invoke("set_value", { input });
-        switch (key) {
+
+            // Update the UI
+            switch (key) {
             case "power":
                 setSliderPowerValue(value);
                 break;
@@ -133,7 +168,7 @@ function App() {
                 break;
             default:
                 break;
-        }
+            }
         }
         setCurrentPage('main');
     }
@@ -143,24 +178,6 @@ function App() {
 
         const appDirectory = await appDataDir();
         const filePath = appDirectory + `profiles.json`
-        let defaultProfiles = {
-                    current: "Default",
-                    profiles: [{
-                        name: "Default",
-                        degrees: 540,
-                        power: 50,
-                        intensity: 50,
-                        bumpstop: 50,
-                        idlespring: 50,
-                        mechanicaldamper: 50,
-                        damper: 50,
-                        spring: 50,
-                        friction: 50,
-                        inertia: 50,
-                        filtefreq: 250,
-                        filterq: 50,
-                    }],
-        }
         try {
             const fileExists = await exists(filePath);
             if (!fileExists) {
@@ -187,7 +204,54 @@ function App() {
                         }
                     } else {
                         setProfiles(defaultProfiles);
-                        applyProfile(existing.profiles[0]);
+                        applyProfile(defaultProfiles.profiles[0]);
+                    }
+                } else {
+                    let obj = Object.assign({}, data);
+                    let content = JSON.stringify(obj);
+                    await writeTextFile(
+                    {
+                        contents: content,
+                        path: filePath,
+                    }
+                    );
+                }
+            }
+        } catch (e) {
+            console.log(e);
+        }
+    };
+
+    const syncConfigData = async (data) => {
+        await prepareDataDirectory()
+
+        const appDirectory = await appDataDir();
+        const filePath = appDirectory + `config.json`
+        try {
+            const fileExists = await exists(filePath);
+            if (!fileExists) {
+                setProfiles(defaultConfig);
+                let content = JSON.stringify(defaultConfig);
+                await writeTextFile(
+                    {
+                        contents: content,
+                        path: filePath,
+                    }
+                );
+            } else {
+                if (!data) {
+                    const content = await readTextFile(filePath);
+                    const existing = JSON.parse(content);
+                    if (existing) {
+                        let existingEncoderRatio = parseFloat(existing.encoderRatio);
+                        if (existingEncoderRatio <= 0) existingEncoderRatio = 1.0;
+                        setEncoderRatio(existingEncoderRatio);
+                        let existingAngleRatio = parseFloat(existing.angleRatio);
+                        if (existingAngleRatio <= 0) existingAngleRatio = 1.0;
+                        setAngleRatio(existingAngleRatio);
+                    } else {
+                        setEncoderRatio(1.0);
+                        setAngleRatio(1.0);
                     }
                 } else {
                     let obj = Object.assign({}, data);
@@ -207,6 +271,7 @@ function App() {
 
     const readDeviceEncoder = async (e) => {
         let degs = await invoke("read_device_encoder");
+        degs = degs / encoderRatio;
         setRotation(Math.floor(degs));
     }
 
@@ -244,6 +309,7 @@ function App() {
 
     const updateSliderValue = async (e) => {
         setProfileChanged(true);
+        let input = e.target.id + ":" + e.target.value;
         switch (e.target.id) {
             case "power":
                 setSliderPowerValue(e.target.value);
@@ -252,6 +318,8 @@ function App() {
                 setSliderIntensityValue(e.target.value);
                 break;
             case "degrees":
+                let value = e.target.value * angleRatio;
+                input = e.target.id + ":" + value;
                 setSliderDegreesValue(e.target.value);
                 break;
             case "bumpstop":
@@ -284,7 +352,6 @@ function App() {
             default:
                 break;
         }
-        let input = e.target.id + ":" + e.target.value;
         await invoke("set_value", { input });
     };
 
@@ -321,6 +388,7 @@ function App() {
         appWindow.setTitle('RPS Paddock')
 
         syncProfileData(null);
+        syncConfigData(null);
 
         const readDeviceEncoderInterval = setInterval(() => {
             readDeviceEncoder();
@@ -334,7 +402,7 @@ function App() {
             clearInterval(getDeviceInterval);
             clearInterval(readDeviceEncoderInterval);
         }
-    }, [status])
+    }, [status, reload])
 
     const RenderProfiles = ({ profiles }) => {
         const keys = Object.keys(profiles.profiles).filter(key => key !== "current");
@@ -349,6 +417,7 @@ function App() {
                     obj.current = profiles.profiles[key].name;
                     setProfiles(obj);
                     syncProfileData(obj);
+                    setProfileChanged(false);
                 }}
             >
                 {profiles.profiles[key].name}
@@ -690,7 +759,6 @@ function App() {
                         style={{paddingLeft: 10, height: 20, marginRight: 5}}
                         onChange={onProfileNameChange} 
                         onKeyDown={(e) => {
-                            console.log(e.target);
                             if (e.key == 'Enter') {
                                 saveNewProfile();
                             }
@@ -716,10 +784,12 @@ function App() {
 
             {currentPage === 'deleteprofile' && (
             <div className="content" style={{textAlign:'center !important'}}>
-                <div className="transparent-blur" style={{height: 140, width: 400, padding: 15, margin: '0 auto'}}>
+                <div className="transparent-blur" style={{height: 180, width: 400, padding: 15, margin: '0 auto'}}>
                     <h3>Delete Profile</h3>
                     <br/>
                     Are you sure that you want to delete {profiles.current} profile?
+                    <br/>
+                    <br/>
                     <br/>
                     <br/>
                     <div>
@@ -727,6 +797,69 @@ function App() {
                         <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Cancel</button>
                     </div>
                     <br/>
+                </div>
+            </div>
+            )}
+
+            {currentPage === 'advanced' && (
+            <div className="content" style={{textAlign:'center !important'}}>
+                <div className="transparent-blur" style={{height: 440, width: 950, padding: 15, margin: '0 auto', textAlign:'left'}}>
+                    <button onClick={() => {
+                        if (encoderRatio <= 0) {
+                            setEncoderRatio(1.0);
+                            alert('The value for encoder ratio should be integer or float');
+                            return;
+                        }
+                        if (angleRatio <= 0) {
+                            setAngleRatio(1.0);
+                            alert('The value for angle ratio should be integer or float');
+                            return;
+                        }
+                        syncConfigData({encoderRatio: encoderRatio, angleRatio: angleRatio});
+                        setCurrentPage('main');
+                        let newReload = reload + 1;
+                        setReload(newReload);
+                    }} className="skewed-button">Back</button>
+                    <h3>Advanced Settings</h3>
+                    Encoder Ratio<br/>
+                    <input
+                        className="skew"
+                        placeholder="1.0"
+                        step="0.01"
+                        type="number"
+                        style={{paddingLeft: 10, height: 20, marginRight: 5}}
+                        onChange={(e) => {
+                            setEncoderRatio(e.target.value);
+                        }} 
+                        ref={advancedSettingsEncoderRatioInputRef}
+                        value={encoderRatio}
+                    />
+                    <br/>
+                    <br/>
+                    Angle Ratio<br/>
+                    <input
+                        className="skew"
+                        placeholder="1.0"
+                        step="0.01"
+                        type="number"
+                        style={{paddingLeft: 10, height: 20, marginRight: 5}}
+                        onChange={(e) => {
+                            setAngleRatio(e.target.value);
+                        }} 
+                        value={angleRatio}
+                    />
+                    <br/>
+                    <br/>
+                    {/* 
+                    <button onClick={() => {
+                        if (confirm('Are you sure that you want to reset everything?')) {
+                            syncConfigData(defaultConfig);
+                            syncProfileData(defaultProfiles);
+                            window.location.reload();
+                        }
+                    }} className="skewed-button">Reset to factory settings</button>
+                    <br/>
+                    */}
                 </div>
             </div>
             )}
@@ -754,9 +887,14 @@ function App() {
                     }} className="skewed-button">Create new profile</button>
                     <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="skewed-button">About us</button>
                     <button onClick={() => { setCurrentPage('thirdparty')}} style={{float: 'right'}} className="skewed-button">Third-party softwares</button>
-                    {/*
-                        <button onClick={() => { setCurrentPage('advanced')}} style={{float: 'right'}} className="skewed-button">Advanced Settings</button>
-                     */}
+                    <button 
+                        onClick={() => { 
+                            setCurrentPage('advanced')
+                            if (advancedSettingsEncoderRatioInputRef && advancedSettingsEncoderRatioInputRef.current) {
+                                advancedSettingsEncoderRatioInputRef.current.focus();
+                            }
+                    }}
+                        style={{float: 'right'}} className="skewed-button">Advanced Settings</button>
                 </div>
             </div>
             )}
