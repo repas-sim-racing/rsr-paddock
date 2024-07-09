@@ -15,7 +15,10 @@ use regex::Regex;
 
 const GLOBAL_POWER_SCALE: f64 = 32767.0;
 const GLOBAL_255_SCALE: f64 = 255.0;
-const GLOBAL_CPR_SCALE: f64 = 65535.0;
+// RSR DT X20
+const GLOBAL_CPR_SCALE: f64 = 65535.0; 
+// Customized TS-PC. Ratio 1:12
+// const GLOBAL_CPR_SCALE: f64 = 785355.0;
 lazy_static! {
     static ref GLOBAL_SERIAL_PORT: Mutex<Option<Box<dyn SerialPort>>> = Mutex::new(None);
 }
