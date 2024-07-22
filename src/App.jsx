@@ -12,8 +12,6 @@ import steeringWheelActive from "./assets/steering-wheel-active.png";
 import steeringWheelTitle from "./assets/steering-wheel-angle-title.png";
 import { getVersion } from '@tauri-apps/api/app';
 
-const appVersion = await getVersion();
-
 function App() {
     const [sliderPowerValue, setSliderPowerValue] = useState(50);
     const [sliderIntensityValue, setSliderIntensityValue] = useState(50);
@@ -56,6 +54,7 @@ function App() {
     const [inertiaTooltipVisible, setInertiaTooltipVisible] = useState(false);
     const [filterfreqTooltipVisible, setFilterfreqTooltipVisible] = useState(false);
     const [filterqTooltipVisible, setFilterqTooltipVisible] = useState(false);
+    const [appVersion, setAppVersion] = useState('');
     
     const defaultConfig = {
         encoderRatio: 1.0,
@@ -191,6 +190,11 @@ function App() {
             }
         }
         setCurrentPage('main');
+    }
+
+    const setAppVersionAsync = async () => {
+        let version = await getVersion();
+        setAppVersion('v' + version);
     }
 
     const syncProfileData = async (data) => {
@@ -563,9 +567,12 @@ function App() {
             setCalibrationLeftDone(true);
         }
     }, [rotation])
+
     useEffect(() => {
         appWindow.setResizable(false);
-        appWindow.setTitle('RPS Paddock')
+        appWindow.setTitle('RPS Paddock');
+
+        setAppVersionAsync();
 
         syncProfileData(null);
         syncConfigData(null);
@@ -1208,9 +1215,11 @@ function App() {
                     }} className={'skewed-button'}>Skip</button>
                     </div>
                     <p style={{marginTop:50, lineHeight: 2}}>
+To ensure safety and smooth gameplay, please follow the steps outlined below:
+<br/>
 1.&nbsp;&nbsp;Rotate the steering wheel to the right until it reaches the bump stop.
 <br/>
-2.&nbsp;&nbsp;Then otate the steering wheel to the left until it reaches the bump stop.
+2.&nbsp;&nbsp;Then rotate the steering wheel to the left until it reaches the bump stop.
 <br/>
 3.&nbsp;&nbsp;Click "Done" once you have completed the steps above.</p>
                     <br/>
