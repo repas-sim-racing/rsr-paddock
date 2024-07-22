@@ -10,6 +10,9 @@ import effectTab from "./assets/effect-tab.png";
 import steeringWheel from "./assets/steering-wheel.png";
 import steeringWheelActive from "./assets/steering-wheel-active.png";
 import steeringWheelTitle from "./assets/steering-wheel-angle-title.png";
+import { getVersion } from '@tauri-apps/api/app';
+
+const appVersion = await getVersion();
 
 function App() {
     const [sliderPowerValue, setSliderPowerValue] = useState(50);
@@ -37,6 +40,22 @@ function App() {
     const [reload, setReload] = useState(0);
     const newProfileInputRef = useRef(null);
     const advancedSettingsEncoderRatioInputRef = useRef(null);
+    const [firstConnect, setFirstConnect] = useState(true);
+    const [calibrationRightDone, setCalibrationRightDone] = useState(false);
+    const [calibrationLeftDone, setCalibrationLeftDone] = useState(false);
+    const [tooltipPosition, setTooltipPosition] = useState({ left: 0, top: 0 });
+    const [degreesTooltipVisible, setDegreesTooltipVisible] = useState(false);
+    const [powerTooltipVisible, setPowerTooltipVisible] = useState(false);
+    const [intensityTooltipVisible, setIntensityTooltipVisible] = useState(false);
+    const [bumpstopTooltipVisible, setBumpstopTooltipVisible] = useState(false);
+    const [idlespringTooltipVisible, setIdlespringTooltipVisible] = useState(false);
+    const [mechanicaldamperTooltipVisible, setMechanicaldamperTooltipVisible] = useState(false);
+    const [damperTooltipVisible, setDamperTooltipVisible] = useState(false);
+    const [springTooltipVisible, setSpringTooltipVisible] = useState(false);
+    const [frictionTooltipVisible, setFrictionTooltipVisible] = useState(false);
+    const [inertiaTooltipVisible, setInertiaTooltipVisible] = useState(false);
+    const [filterfreqTooltipVisible, setFilterfreqTooltipVisible] = useState(false);
+    const [filterqTooltipVisible, setFilterqTooltipVisible] = useState(false);
     
     const defaultConfig = {
         encoderRatio: 1.0,
@@ -72,6 +91,7 @@ function App() {
     const onProfileNameChange = (e) => {
         setNewProfileName(e.target.value);
     }
+
 
     const deleteCurrentProfile = () => {
         let obj = Object.assign({}, profiles);
@@ -272,7 +292,8 @@ function App() {
     const readDeviceEncoder = async (e) => {
         let degs = await invoke("read_device_encoder");
         degs = degs / encoderRatio;
-        setRotation(Math.floor(degs));
+        let floored = Math.floor(degs)
+        setRotation(floored);
     }
 
     const setCenterPosition = async (e) => {
@@ -306,6 +327,79 @@ function App() {
         setProfileChanged(false);
         syncProfileData(obj);
     }
+
+    const handleWheel = (e) => {
+        let currentValue = 0;
+        switch (e.target.id) {
+            case "power":
+                currentValue = sliderPowerValue;
+                break;
+            case "intensity":
+                currentValue = sliderIntensityValue;
+                break;
+            case "degrees":
+                currentValue = sliderDegreesValue;
+                break;
+            case "bumpstop":
+                currentValue = sliderBumpstopValue;
+                break;
+            case "idlespring":
+                currentValue = sliderIdleSpringValue;
+                break;
+            case "mechanicaldamper":
+                currentValue = sliderMechanicalDamperValue;
+                break;
+            case "damper":
+                currentValue = sliderDamperValue;
+                break;
+            case "spring":
+                currentValue = sliderSpringValue;
+                break;
+            case "friction":
+                currentValue = sliderFrictionValue;
+                break;
+            case "inertia":
+                currentValue = sliderInertiaValue;
+                break;
+            case "filterfreq":
+                currentValue = sliderFilterFreqValue;
+                break;
+            case "filterq":
+                currentValue = sliderFilterQValue;
+                break;
+            default:
+                break;
+        }
+
+        console.log(e);
+        console.log(e.deltaY);
+        console.log(currentValue);
+        if (e.deltaY > 0) {
+            if (e.target.id === 'degrees') {
+                currentValue = parseFloat(currentValue) + 5
+            } else {
+                currentValue = parseFloat(currentValue) + 1
+            }
+        } else {
+            if (e.target.id === 'degrees') {
+                currentValue = parseFloat(currentValue) - 5
+            } else {
+                currentValue = parseFloat(currentValue) - 1
+            }
+        }
+        console.log(currentValue);
+        if (e.target.id === 'degrees') {
+            currentValue = Math.max(0, Math.min(1440, currentValue));
+        } else if (e.target.id === 'filterfreq') {
+            currentValue = Math.max(0, Math.min(50, currentValue));
+        } else if (e.target.id === 'filterq') {
+            currentValue = Math.max(0, Math.min(80, currentValue));
+        } else {
+            currentValue = Math.max(0, Math.min(100, currentValue));
+        }
+        e.target.value = currentValue;
+        updateSliderValue(e);
+    };
 
     const updateSliderValue = async (e) => {
         setProfileChanged(true);
@@ -355,6 +449,80 @@ function App() {
         await invoke("set_value", { input });
     };
 
+    const showTooltip = (e) => {
+        if (e && e.target && e.target.id === 'degrees-tooltip') {
+            setDegreesTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'power-tooltip') {
+            setPowerTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'intensity-tooltip') {
+            setIntensityTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'bumpstop-tooltip') {
+            setBumpstopTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'mechanicaldamper-tooltip') {
+            setMechanicaldamperTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'idlespring-tooltip') {
+            setIdlespringTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'damper-tooltip') {
+            setDamperTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'spring-tooltip') {
+            setSpringTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'friction-tooltip') {
+            setFrictionTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'inertia-tooltip') {
+            setInertiaTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'filterfreq-tooltip') {
+            setFilterfreqTooltipVisible(true);
+        }
+        if (e && e.target && e.target.id === 'filterq-tooltip') {
+            setFilterqTooltipVisible(true);
+        }
+    };
+
+    const hideTooltip = () => {
+        setDegreesTooltipVisible(false);
+        setPowerTooltipVisible(false);
+        setIntensityTooltipVisible(false);
+        setMechanicaldamperTooltipVisible(false);
+        setIdlespringTooltipVisible(false);
+        setBumpstopTooltipVisible(false);
+        setDamperTooltipVisible(false);
+        setSpringTooltipVisible(false);
+        setFrictionTooltipVisible(false);
+        setInertiaTooltipVisible(false);
+        setFilterfreqTooltipVisible(false);
+        setFilterqTooltipVisible(false);
+    };
+
+    const updateTooltipPosition = (e) => {
+        setTooltipPosition({ left: e.clientX+170, top: e.clientY });
+    };
+
+    const calibrate = async () => {
+        setCurrentPage('calibration');
+        let input = 'power:15'
+        await invoke("set_value", { input });
+        input = 'degrees:360'
+        await invoke("set_value", { input });
+        input = 'idlespring:100'
+        await invoke("set_value", { input });
+    }
+
+    const exitCalibration = async () => {
+        setFirstConnect(false);
+        syncProfileData(null);
+        setCurrentPage('main');
+    }
+
     const getDevices = async () => {
         let device = await invoke("get_device");
         if (device && device.message && device.message.length > 0) {
@@ -365,9 +533,13 @@ function App() {
             }
         }
         if (device && device.port && device.port.length > 0) {
+                if (firstConnect) {
+                    calibrate();
+                }
                 setStatus('Connected')
                 setConnectedDevice(device.port);
                 setMessage('');
+
         } else {
                 setStatus('Disconnected');
                 setConnectedDevice('');
@@ -384,6 +556,14 @@ function App() {
     }
 
     useEffect(() => {
+        if (rotation > 160) {
+            setCalibrationRightDone(true);
+        }
+        if (rotation < -160) {
+            setCalibrationLeftDone(true);
+        }
+    }, [rotation])
+    useEffect(() => {
         appWindow.setResizable(false);
         appWindow.setTitle('RPS Paddock')
 
@@ -396,13 +576,13 @@ function App() {
 
         const getDeviceInterval = setInterval(() => {
             getDevices();
-        }, 1000);
+        }, 500);
 
         return () => {
             clearInterval(getDeviceInterval);
             clearInterval(readDeviceEncoderInterval);
         }
-    }, [status, reload])
+    }, [status, reload, firstConnect])
 
     const RenderProfiles = ({ profiles }) => {
         const keys = Object.keys(profiles.profiles).filter(key => key !== "current");
@@ -434,8 +614,12 @@ function App() {
                     <button className="titlebar-button" id="close" onClick={closeApp}>×</button>
                     <button className="titlebar-button" id="minimize" onClick={minimizeApp}>−</button>
                 </div>
+                {/**
+                {firstConnect ? 'firstConncet true' : 'firstConnect false'}<br/>
+                 */}
                 <div className="title" data-tauri-drag-region>
                     <img src={paddockLogo} width="300" data-tauri-drag-region/>
+                    <span style={{fontSize:11}}>&nbsp;v{appVersion}</span>
 	    	    <div className="device-box" data-tauri-drag-region>
                 <div className="status" data-tauri-drag-region>
                 {status=='Connected' ? (
@@ -459,9 +643,20 @@ function App() {
                 <div className="col-axis">
 	    	    <img src={axisTab} style={{height:30, align:'right'}}/>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Steering Angle <span style={{float:'right', marginRight:30}}>{sliderDegreesValue}°</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="degrees-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Steering Angle
+                                <span style={{float:'right', marginRight:30}}>{sliderDegreesValue}°</span>
+                            </div>
+                        </div>
+                        {degreesTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                This setting determines how far the steering wheel can be turned to the left or right, affecting the vehicle's turning radius and responsiveness.
+                            </div>
+                        )}
                         <input
                             id="degrees"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -473,9 +668,20 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Power <span style={{float:'right', marginRight:30}}>{sliderPowerValue}%</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="power-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Power
+                                <span style={{float:'right', marginRight:30}}>{sliderPowerValue}%</span>
+                            </div>
+                        </div>
+                        {powerTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                Adjusting the force feedback power changes how strongly the steering wheel resists or reacts to these simulated forces.
+                            </div>
+                        )}
                         <input
                             id="power"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -486,9 +692,20 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Intensity <span style={{float:'right', marginRight:30}}>{sliderIntensityValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="intensity-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Intensity
+                                <span style={{float:'right', marginRight:30}}>{sliderIntensityValue}</span>
+                            </div>
+                        </div>
+                        {intensityTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                Higher intensity settings offer more pronounced and detailed feedback, enhancing the realism and immersive experience, while lower intensity settings provide a gentler and less detailed feedback.
+                            </div>
+                        )}
                         <input
                             id="intensity"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -499,9 +716,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Bumpstop <span style={{float:'right', marginRight:30}}>{sliderBumpstopValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="bumpstop-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Bumpstop <span style={{float:'right', marginRight:30}}>{sliderBumpstopValue}</span>
+                            </div>
+                        </div>
+                        {bumpstopTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                A physical or software-based limit that prevents the steering wheel from rotating beyond a certain angle. The higher the value, the more it will resists against force from your hands.
+                            </div>
+                        )}
                         <input
                             id="bumpstop"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -512,9 +739,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Idle Spring <span style={{float:'right', marginRight:30}}>{sliderIdleSpringValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="idlespring-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Idle Spring <span style={{float:'right', marginRight:30}}>{sliderIdleSpringValue}</span>
+                            </div>
+                        </div>
+                        {idlespringTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                Centering force that applied to a force feedback steering wheel when it's not being actively used, gently returning it to the neutral position.
+                            </div>
+                        )}
                         <input
                             id="idlespring"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -525,9 +762,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Mechanical Damper <span style={{float:'right', marginRight:30}}>{sliderMechanicalDamperValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="mechanicaldamper-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Mechanical Damper <span style={{float:'right', marginRight:30}}>{sliderMechanicalDamperValue}</span>
+                            </div>
+                        </div>
+                        {mechanicaldamperTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                This effect involves physical components within the steering wheel setup, such as springs, dampers, or other mechanical parts, that provide resistance. A mechanical damper offers a more tactile and realistic feedback by physically resisting the wheel's movements, mimicking the natural damping of a real car's steering system.
+                            </div>
+                        )}
                         <input
                             id="mechanicaldamper"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -541,9 +788,19 @@ function App() {
                 <div className="col-effect">
 	    	    <img src={effectTab} style={{height:30, align:'left'}}/>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Damper <span style={{float:'right', marginRight:30}}>{sliderDamperValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="damper-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Damper <span style={{float:'right', marginRight:30}}>{sliderDamperValue}</span>
+                            </div>
+                        </div>
+                        {damperTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                Simulates resistance and damping effects through the force feedback system. It adjusts the electronic signals to create a sensation of smoothness and control by reducing vibrations and rapid movements.
+                            </div>
+                        )}
                         <input
                             id="damper"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -554,9 +811,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Spring <span style={{float:'right', marginRight:30}}>{sliderSpringValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="spring-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Spring <span style={{float:'right', marginRight:30}}>{sliderSpringValue}</span>
+                            </div>
+                        </div>
+                        {springTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                The centering force that pulls the wheel back to the neutral position, simulating the natural return-to-center behavior of a real car's steering system.
+                            </div>
+                        )}
                         <input
                             id="spring"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -567,9 +834,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Friction <span style={{float:'right', marginRight:30}}>{sliderFrictionValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="friction-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Friction <span style={{float:'right', marginRight:30}}>{sliderFrictionValue}</span>
+                            </div>
+                        </div>
+                        {frictionTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                The resistance felt when turning the wheel, simulating the natural friction of a real car's steering system. It provides a more realistic steering feel by adding consistent resistance to the wheel's movements.
+                            </div>
+                        )}
                         <input
                             id="friction"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -580,9 +857,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Inertia <span style={{float:'right', marginRight:30}}>{sliderInertiaValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="inertia-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Inertia <span style={{float:'right', marginRight:30}}>{sliderInertiaValue}</span>
+                            </div>
+                        </div>
+                        {inertiaTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                The resistance that simulates the mass and momentum of a real car's steering system, making the wheel feel heavier and more realistic as it resists sudden changes in direction.
+                            </div>
+                        )}
                         <input
                             id="inertia"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -593,9 +880,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Filter frequency<span style={{float:'right', marginRight:30}}>{sliderFilterFreqValue} Hz</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="filterfreq-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Filter frequency<span style={{float:'right', marginRight:30}}>{sliderFilterFreqValue} Hz</span>
+                            </div>
+                        </div>
+                        {filterfreqTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                The rate (measured in hertz, Hz) at which the system processes and smooths out the force feedback signals. Higher filter frequency values result in more precise and responsive feedback, while lower values provide a smoother but potentially less detailed feel.
+                            </div>
+                        )}
                         <input
                             id="filterfreq"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -606,9 +903,19 @@ function App() {
                         />
                     </div>
                     <div className="slider-container">
-                        <div id="slider-value" className="slider-value">Filter Q<span style={{float:'right', marginRight:30}}>{sliderFilterQValue}</span></div>
+                        <div id="slider-value" className="slider-value">
+                            <div id="filterq-tooltip" onMouseEnter={showTooltip} onMouseLeave={hideTooltip} onMouseMove={updateTooltipPosition}>
+                                Filter Q<span style={{float:'right', marginRight:30}}>{sliderFilterQValue}</span>
+                            </div>
+                        </div>
+                        {filterqTooltipVisible && (
+                            <div className="tooltip" style={{ left: tooltipPosition.left, top: tooltipPosition.top }}>
+                                The quality factor of the filter used in processing force feedback signals. It determines the sharpness and precision of the filtering, affecting how well unwanted noise and vibrations are suppressed while preserving the desired feedback effects. A higher FilterQ value results in more precise filtering, while a lower value offers smoother but less detailed feedback.
+                            </div>
+                        )}
                         <input
                             id="filterq"
+                            onWheel={handleWheel}
                             disabled={!(connectedDevice && connectedDevice.length > 0)}
                             className={(connectedDevice && connectedDevice.length > 0) ? 'slider' : 'slider-disabled'}
                             type="range"
@@ -682,8 +989,14 @@ function App() {
                         </div>
                         <br/>
                 <button onClick={setCenterPosition} className="set-center-button" >Set center position</button>
+                <button onClick={() => {
+                    setCalibrationLeftDone(false);
+                    setCalibrationRightDone(false);
+                    calibrate();
+                }} className="set-center-button" style={{marginLeft: 3}} >Calibrate</button>
                 <br/>
                 {/* 
+                <button onClick={() => { setFirstConnect(true); }} className="set-center-button" >Set firstConncet to true</button>
                 <button onClick={getDevices} className="set-center-button">Get device</button>
                 <button onClick={readDeviceEncoder} className="set-center-button">Read device</button>
                 */}
@@ -695,7 +1008,7 @@ function App() {
             <div className="content">
                 <div className="transparent-blur" style={{height: 410, width: 950, padding: 15}}>
                     <button onClick={() => { setCurrentPage('main')}} style={{float:'left'}} className="skewed-button">Back</button>
-                    <h3>About Us</h3>
+                    <h3>About</h3>
                     <div style={{paddingLeft: 100, paddingRight: 100}}>
                     <p>
                     Our goal is to elevate the immersion of racing simulation. We provide an excellent yet affordable sim racing experience by delivering both quality hardware and endless innovations. What began as the enthusiasm of passionate DIY builders and sim racers has transformed into a well-engineered product for serious and pro sim racing gamers like you.
@@ -705,6 +1018,9 @@ function App() {
                     </p>
                     <p>
                         <a className="skewed-button" href="https://repas-sim-racing.github.io/" target="_blank">Visit our website</a>
+                    </p>
+                    <p>
+                        <a className="skewed-button" href="https://github.com/repas-sim-racing/rsr-paddock" target="_blank">RSR Paddock source code</a>
                     </p>
                     </div>
                 </div>
@@ -864,6 +1180,44 @@ function App() {
             </div>
             )}
 
+            {currentPage === 'calibration' && (
+            <div className="content" style={{textAlign:'center !important'}}>
+                <div className="transparent-blur" style={{height: 440, width: 950, padding: 15, margin: '0 auto', textAlign:'left'}}>
+                    <h3>Calibration</h3>
+                    <div style={{float:'right', top: 0, marginRight: 100, textAlign:'center', width:250}}>
+                        <div style={{
+                            borderRight: calibrationRightDone ? '5px solid green' : '5px solid grey',
+                            borderLeft: calibrationLeftDone ? '5px solid green' : '5px solid grey',
+                            marginBottom: 30,
+                            textAlign: 'center'
+                        }}>
+	    	                <img src={connectedDevice === '' ? steeringWheel : steeringWheelActive} 
+                                    style={{
+                                    height: 200,
+                                    transform: `rotate(${rotation}deg)`,
+                                    transformOrigin: 'center center',
+                                }}
+                            />
+                        </div>
+                    <button onClick={() => {
+                        if (!calibrationLeftDone || !calibrationRightDone) return;
+                        exitCalibration();
+                    }} className={'skewed-button' + ((calibrationLeftDone && calibrationRightDone) ? '': ' disabled')}>Done</button>
+                    <button onClick={() => {
+                        exitCalibration();
+                    }} className={'skewed-button'}>Skip</button>
+                    </div>
+                    <p style={{marginTop:50, lineHeight: 2}}>
+1.&nbsp;&nbsp;Rotate the steering wheel to the right until it reaches the bump stop.
+<br/>
+2.&nbsp;&nbsp;Then otate the steering wheel to the left until it reaches the bump stop.
+<br/>
+3.&nbsp;&nbsp;Click "Done" once you have completed the steps above.</p>
+                    <br/>
+                </div>
+            </div>
+            )}
+
             {currentPage === 'main' && (
             <div id="footer">
                 <div style={{width: '100%', verticalAlign: 'top', padding: 7}}>
@@ -885,7 +1239,7 @@ function App() {
                             }
                         }, 200);
                     }} className="skewed-button">Create new profile</button>
-                    <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="skewed-button">About us</button>
+                    <button onClick={() => { setCurrentPage('about')}} style={{float: 'right', marginRight: 30}} className="skewed-button">About</button>
                     <button onClick={() => { setCurrentPage('thirdparty')}} style={{float: 'right'}} className="skewed-button">Third-party softwares</button>
                     <button 
                         onClick={() => { 
